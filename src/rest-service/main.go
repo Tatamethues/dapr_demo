@@ -11,10 +11,10 @@ func main() {
 	app := fiber.New()
 
 	// Routes
-	app.Get("/", hello)
+	app.Get("/hello", hello)
 
 	// Start server
-	log.Fatal(app.Listen(":3000"))
+	log.Fatal(app.Listen(":80"))
 }
 
 // Handler

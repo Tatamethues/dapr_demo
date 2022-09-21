@@ -22,6 +22,32 @@ services:
       - "./configuration/:/configuration"
     depends_on:
       - gw
+
+  rest-service:
+    image: "dapr_demo/rest-service:latest"
+    build: 
+      context: .
+      dockerfile: src/rest-service/Dockerfile
+    ports:
+      - "5101:80"
+    networks:
+      - dapr-demo
+  rest-service-dapr:
+    image: "daprio/daprd:1.8.4"
+    network_mode: "service:rest-service"
+    command: [
+      "./daprd",
+      "-app-id", "rest-service",
+      "-app-port", "80",
+      "-components-path","/components",
+      "-config", "/configuration/config.yaml"
+    ]
+    volumes:
+      - "./components:/components"
+      - "./configuration/:/configuration"
+    depends_on:
+      - rest-service
+
   ############################
   # Redis state store
   ############################
