@@ -1,0 +1,40 @@
+version: '3.9'
+services:
+  gw:
+    image: "envoyproxy/envoy-dev:latest"
+    ports:
+      - "9901:9901"
+      - "10000:10000"
+    networks:
+      - dapr-demo
+  gw-dapr:
+    image: "daprio/daprd:1.8.4"
+    network_mode: "service:gw"
+    command: [
+      "./daprd",
+      "-app-id", "gw",
+      "-app-port", "5000",
+      "-components-path","/components",
+      "-config", "/configuration/config.yaml"
+    ]
+    volumes:
+      - "./components:/components"
+      - "./configuration/:/configuration"
+    depends_on:
+      - gw
+  ############################
+  # Redis state store
+  ############################
+  redis:
+    image: "redis:latest"
+    ports:
+      - "6379:6379"
+    networks:
+      - dapr-demo
+
+  zipkin:
+    image: "openzipkin/zipkin"
+    ports:
+      - "9411:9411"
+networks:
+  dapr-demo:
