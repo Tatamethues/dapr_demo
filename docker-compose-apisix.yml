@@ -1,0 +1,104 @@
+version: '3.9'
+services:
+  apisix-dashboard:
+    image: apache/apisix-dashboard:2.13-alpine
+    volumes:
+    - ./apisix/dashboard/conf.yaml:/usr/local/apisix-dashboard/conf/conf.yaml
+    ports:
+    - "9000:9000"
+    networks:
+      - dapr-demo
+
+  apisix:
+    image: apache/apisix:2.15.0-debian
+    volumes:
+      - ./apisix/apisix_log:/usr/local/apisix/logs
+      - ./apisix/apisix_conf/config.yaml:/usr/local/apisix/conf/config.yaml:ro
+    depends_on:
+      - etcd
+    ##network_mode: host
+    ports:
+      - "9080:9080/tcp"
+      - "9091:9091/tcp"
+      - "9443:9443/tcp"
+      - "9092:9092/tcp"
+    networks:
+      - dapr-demo
+
+  etcd:
+    image: bitnami/etcd:3.4.15
+    volumes:
+      - etcd_data:/bitnami/etcd
+    environment:
+      ETCD_ENABLE_V2: "true"
+      ALLOW_NONE_AUTHENTICATION: "yes"
+      ETCD_ADVERTISE_CLIENT_URLS: "http://0.0.0.0:2379"
+      ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
+    ports:
+      - "2379:2379/tcp"
+    networks:
+      - dapr-demo
+
+  # apisix-dapr:
+  #   image: "daprio/daprd:1.8.4"
+  #   network_mode: "service:apisix"
+  #   command: [
+  #     "./daprd",
+  #     "-app-id", "apisix",
+  #     "-app-port", "9080",
+  #     "-components-path","/components",
+  #     "-config", "/configuration/config.yaml"
+  #   ]
+  #   volumes:
+  #     - "./components:/components"
+  #     - "./configuration/:/configuration"
+  #   depends_on:
+  #     - apisix
+
+  rest-service:
+    image: "dapr_demo/rest-service:latest"
+    build: 
+      context: .
+      dockerfile: src/rest-service/Dockerfile
+    ports:
+      - "5101:80"
+    networks:
+      - dapr-demo
+  rest-service-dapr:
+    image: "daprio/daprd:1.8.4"
+    network_mode: "service:rest-service"
+    command: [
+      "./daprd",
+      "-app-id", "rest-service",
+      "-app-port", "80",
+      "-components-path","/components",
+      "-config", "/configuration/config.yaml"
+    ]
+    volumes:
+      - "./components:/components"
+      - "./configuration/:/configuration"
+    depends_on:
+      - rest-service
+
+  ############################
+  # Redis state store
+  ############################
+  redis:
+    image: "redis:latest"
+    ports:
+      - "6379:6379"
+    networks:
+      - dapr-demo
+
+  zipkin:
+    image: "openzipkin/zipkin"
+    ports:
+      - "9411:9411"
+    networks:
+      - dapr-demo 
+networks:
+  dapr-demo:
+
+volumes:
+  etcd_data:
+    driver: local

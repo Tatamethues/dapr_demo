@@ -1,10 +1,15 @@
 version: '3.9'
 services:
+
   gw:
-    image: "envoyproxy/envoy-dev:latest"
+    image: "dapr_demo/gw:latest"
+    build: 
+      context: .
+      dockerfile: envoy/Dockerfile
+    # image: "envoyproxy/envoy-dev:latest"
     ports:
       - "9901:9901"
-      - "10000:10000"
+      - "5000:10000"
     networks:
       - dapr-demo
   gw-dapr:
@@ -13,7 +18,7 @@ services:
     command: [
       "./daprd",
       "-app-id", "gw",
-      "-app-port", "5000",
+      "-app-port", "10000",
       "-components-path","/components",
       "-config", "/configuration/config.yaml"
     ]
@@ -62,5 +67,7 @@ services:
     image: "openzipkin/zipkin"
     ports:
       - "9411:9411"
+    networks:
+      - dapr-demo 
 networks:
   dapr-demo:
